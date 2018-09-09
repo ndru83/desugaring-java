@@ -1,0 +1,92 @@
+= Java `for` loop internals
+
+== Regular `for` loops
+
+For statements are essentially compiled into equivalent while loops.
+
+[source,java]
+.Original code
+----
+for (int i = 0; i < 5; ++i) {
+    // ...
+}
+----
+
+[source,java]
+.Compiled equivalent
+----
+int i = 0;
+while (i < 5) {
+    // ...
+    ++i;
+}
+----
+
+The `for` and `while` statements above both compile into the exact same bytecode.
+
+[source,bytecode]
+.Bytecode
+----
+ 0: iconst_0
+ 1: istore_1
+ 2: iload_1
+ 3: iconst_5
+ 4: if_icmpge     13
+    // ...
+ 7: iinc          1, 1
+10: goto          2
+13: return
+----
+
+== Enhanced `for` loops (over `Iterables`)
+
+Enhanced `for` loops over iterables compile into a while loop equivalent using the iterable / iterator api.
+
+[source,java]
+.Original code
+----
+for (String value : iterable) {
+    // ...
+}
+----
+
+[source,java]
+.Compiled equivalent
+----
+$iterator = iterable.iterator();       // 1
+while ($iterator.hasNext()) {          // 2
+    String value = $iterator.next();   // 3
+    // ...
+}
+----
+
+. The `Iterator<T>` object is retrived.
+. The loop will continue as long as `hasNext()` returns `true`. 
+. The Iterator's `next()` method is called to retrieve the current item and to advance the iterator.
+
+== Enhanced `for` loops (over arrays)
+
+Enhanced `for` loops over arrays compile into while loops that are almost identical to that of regular `for` loops iterating over an entire array.
+
+[source,java]
+.Original code
+----
+for (String value : arrayExpr) {
+    // ...
+}
+----
+
+[source,java]
+.Compiled equivalent
+----
+$array = arrayExpr;
+$length = $array.length;
+$i = 0;
+while ($i < $length) {
+    String value = $array[$i];
+    // ...
+    ++$i;
+}
+----
+
+Note, that the result of the inital array expression needs to be stored in an unnamed variable, because the re-evaluation of the expression might not be side-effect free.
