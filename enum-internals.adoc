@@ -1,0 +1,303 @@
+= Java Enum Internals
+
+== Basic enums
+
+Consider the following basic enum declaration:
+
+[source,java]
+----
+public enum Example {
+    ONE, TWO, THREE
+}
+----
+
+At the highest level, all enums are compiled into a final class extending  `Enum<T>`.
+
+[source,java]
+----
+public final class Example extends Enum<Example> {
+    ...
+}
+----
+
+The class will have a private constructor matching the signature of it's base class' constructor, accepting an String constant name and an int constant ordinal.
+
+[source,java]
+----
+private Example(String name, int ordinal) {
+    super(name, ordinal);
+}
+----
+
+Declared enum constants are compiled into `public static final` fields. Any use of the enum constants in other parts of your source code will compile to use these static fields. In addition to the public enum constants, a private array field will also be generated, intended hold a reference to all the enum constants.
+
+[source,java]
+----
+public static final Example ONE;
+public static final Example TWO;
+public static final Example THREE;
+private static final Example[] $VALUES;
+----
+
+The enum constant fields are initialized in the class' static constructor. Each constant reference is created by calling the class' private constructor with the exact name of the constant and an ordinal number starting at 0 and incremented by 1 for every consecutive constant created. The `$VALUES` array field is initialized to hold a reference to every enum constant.
+
+[source,java]
+----
+static {
+    Example.ONE = new Example("ONE", 0);
+    Example.TWO = new Example("TWO", 1);
+    Example.TWO = new Example("THREE", 2);
+    Example.$VALUES = new Example[] {
+        Example.ONE,
+        Example.TWO,
+        Example.THREE
+    };
+};
+----
+
+The `values()` method is added to allow access to a clone of the `$VALUES` array.
+
+[source,java]
+----
+public static Example[] values() {
+    return (Example[]) $VALUES.clone();
+}
+----
+
+NOTE: The `Class<T>` class internally implements it's `getEnumConstants()` method as a reflective call to the enum's `values()` method.
+
+Finally the enum is generated a `valueOf` method which simply dispatches the call to a static method of the same name defined on the Enum base class.
+
+[source,java]
+----
+public static Example valueOf(String name) {
+    return Enum.valueOf(Example.class, name);
+}
+----
+
+Having enumerated all members of a compiled enum review the entire class as compiled by javac:
+
+[source,java]
+----
+public final class Example extends Enum<Example> {
+
+  public static final Example ONE;
+  public static final Example TWO;
+  public static final Example THREE;
+
+  private static final Example[] $VALUES;
+  
+  private Example(String name, int ordinal) {
+    super(name, ordinal);
+  }
+
+  static {
+    Example.ONE = new Example("ONE", 0);
+    Example.TWO = new Example("TWO", 1);
+    Example.TWO = new Example("THREE", 2);
+    Example.$VALUES = new Example[] {
+        Example.ONE,
+        Example.TWO,
+        Example.THREE
+    };
+  };
+
+  public static Example[] values() {
+    return (Example[]) $VALUES.clone();
+  }
+
+  public static Example valueOf(String name) {
+    return Enum.valueOf(Example.class, name);
+  }
+
+}
+----
+
+== Enums with non-default constructors
+
+For enums with non-default constructors consider the following enum declaration:
+
+[source,java]
+----
+public enum Example {
+
+    ONE(100), TWO(200), THREE("300", 300);
+
+    Example(int someInt) {
+        // ctor body 1
+    }
+
+    Example(String someString, int someInt) {
+        // ctor body 2
+    }
+    
+}
+----
+
+Non-default constructor(s) on enum classes are compiled by pre-pending the ones appearing in the source code with an additional String and int parameters, representing the name and an ordinal value of a given enum constant. These parameters are used when invoking constructor of the enum supertype. 
+
+[source,java]
+----
+private Example(String name, int ordinal, int someInt) {
+    super(name, ordinal);
+    // ctor body 1
+}
+
+private Example(String name, int ordinal, String someString, int someInt) {
+    super(name, ordinal);
+    // ctor body 2
+}
+----
+
+NOTE: That these additional parameters `name` and `ordinal` don't actually have names in the byte code and therefore can never clash with the names of other constructor parameters.
+
+Enum constant fields will be initialized by calls to the constructor appropriate for the given constant's constructor.
+
+[source,java]
+----
+static {
+    Example.ONE = new Example("ONE", 0, 100);
+    Example.TWO = new Example("TWO", 1, 200);
+    Example.TWO = new Example("THREE", 2, "300", 300);
+    Example.$VALUES = new Example[] {
+        Example.ONE,
+        Example.TWO,
+        Example.THREE
+    };
+};
+----
+
+Other than the differences outlined above, enum classes with non-default constructors are compiled just like basic enums.
+
+== Enum constants with class bodies
+
+For enum constants with class bodies, consider the following example:
+
+[source,java]
+----
+public enum MessageStatus {
+
+    INIT,
+    PENDING,
+    COMPLETED,
+    FAILED {
+        @Override
+        public boolean isErroneous() {
+            return true;
+        }
+    };
+
+    public boolean isErroneous() {
+        return false;
+    }
+
+}
+----
+
+Class bodies of enum constants are implemented as anonymous classes of the enum as can be seen in the static initializer compiled for the example enum:
+
+[source,java]
+----
+static {
+    MessageStatus.INIT = new MessageStatus("INIT", 0);
+    MessageStatus.PENDING = new MessageStatus("PENDING", 1);
+    MessageStatus.COMPLETED = new MessageStatus("COMPLETED", 2);
+    MessageStatus.FAILED = new MessageStatus("FAILED", 3) {
+        @Override
+        public boolean isErroneous() {
+            return true;
+        }
+    };
+    MessageStatus.$VALUES = new MessageStatus[] {
+        MessageStatus.INIT,
+        MessageStatus.PENDING,
+        MessageStatus.COMPLETED,
+        MessageStatus.FAILED
+    };
+};
+----
+
+== Futher enum-related internals
+
+=== Internals of `Class.getEnumConstants()`
+
+An alternative way for retrieving the enum constant of an enum is by using the `T[] getEnumConstants()` provided by the enum's `Class<T>` object. Interestingly, `Class<T>`, in turn, relies on reflection to call the actual enum class's `values()` method in order to retrieve the constant object.
+
+[source,java]
+.Internal implementation of `Class.getEnumConstants()`
+----
+private transient volatile T[] enumConstants;
+
+public T[] getEnumConstants() {
+	T[] values = getEnumConstantsShared();
+	return (values != null) ? values.clone() : null;
+}
+
+T[] getEnumConstantsShared() {
+	T[] constants = enumConstants;
+	if (constants == null) {
+		if (!isEnum()) return null;
+		try {
+			final Method values = getMethod("values");
+			java.security.AccessController.doPrivileged(
+				new java.security.PrivilegedAction<>() {
+					public Void run() {
+							values.setAccessible(true);
+							return null;
+						}
+					});
+			@SuppressWarnings("unchecked")
+			T[] temporaryConstants = (T[])values.invoke(null);
+			enumConstants = constants = temporaryConstants;
+		}
+		// These can happen when users concoct enum-like classes
+		// that don't comply with the enum spec.
+		catch (InvocationTargetException | NoSuchMethodException |
+			   IllegalAccessException ex) { return null; }
+	}
+	return constants;
+}
+----
+
+=== Internals of Enum.valueOf(Example.class, name)
+
+As stated previously, the generated `valueOf(String name)` method of enum classes call `Enum.valueOf(Class<T> enumType, String name)` for resolving contants names into enum constant. This name resolution is even more complicated, bacause the `Enum.valueOf(Class<T> enumType, String name)` method in turn relies on an package private _enum constant directory_ functionality maintained by the enum's `Class<T>` object. 
+
+[source,java]
+.Internal implementation of `Enum.valueOf(Class<T> enumType, String name)`
+----
+public static <T extends Enum<T>> T valueOf(Class<T> enumType, String name) {
+	T result = enumType.enumConstantDirectory().get(name);
+	if (result != null)
+		return result;
+	if (name == null)
+		throw new NullPointerException("Name is null");
+	throw new IllegalArgumentException(
+		"No enum constant " + enumType.getCanonicalName() + "." + name);
+}
+----
+
+The _enum constant directory_, is a lazily built `Map<String, T>` structure stored by enum Class objects, mapping constant names to references of actual enum constant. The `enumConstantDirectory()` method builds the lookup map from data returned by the very same reflection-based `getEnumConstantsShared()` method used by the previously discussed `Class.getEnumConstants()` method.
+
+[source,java]
+.Internal implementation of `Class.enumConstantDirectory()`
+----
+private transient volatile Map<String, T> enumConstantDirectory;
+
+Map<String, T> enumConstantDirectory() {
+	Map<String, T> directory = enumConstantDirectory;
+	if (directory == null) {
+		T[] universe = getEnumConstantsShared();
+		if (universe == null)
+			throw new IllegalArgumentException(
+				getName() + " is not an enum type");
+		directory = new HashMap<>(2 * universe.length);
+		for (T constant : universe) {
+			directory.put(((Enum<?>)constant).name(), constant);
+		}
+		enumConstantDirectory = directory;
+	}
+	return directory;
+}
+----
+
