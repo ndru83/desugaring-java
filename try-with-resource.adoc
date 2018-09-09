@@ -1,0 +1,98 @@
+= Try-with-resource internals
+
+== Basic try-with-resource without catch and finally blocks
+
+[source,java,linenums]
+.Original code
+----
+try (AutoCloseable resource = new ClosableResource()) {
+    // ...
+}
+----
+
+[source,java,linenums]
+.Compiled code equivalent
+----
+AutoCloseable resource = new ClosableResource();
+Throwable $exception = null;
+
+try {
+    // ...
+} catch (Throwable $e) {
+    $exception = $e;
+    throw $e;
+} finally {
+    if (resource != null) {
+        if ($exception != null) {
+            try {
+                resource.close();
+            } catch (Throwable $e) {
+                $exception.addSuppressed($e);
+            }
+        } else {
+            resource.close();
+        }
+    }
+}
+----
+
+NOTE: Local variables starting with '$' in the above code are only named for clarity. These variables are otherwise unnamed, referenced only by slot number.
+
+== Try-with-resource with catch and finally blocks
+
+Catch and finally block are compiled as parts of a regular try-catch-finally block wrapping the try-with-resource block.
+
+[source,java,linenums]
+.Original code
+----
+try (AutoCloseable resource = new ClosableResource()) {
+    // ...
+} catch (Exception1 e) {
+    // ...
+} catch (Exception2 e) {
+    // ...
+} finally {
+    // ...
+}
+----
+
+[source,java,linenums]
+.Compiled code equivalent (using basic try-with-resource for code brevity)
+----
+try {
+    try (AutoCloseable resource = new ClosableResource()) {
+        // ...
+    }
+} catch (Exception1 e) {
+    // ...
+} catch (Exception2 e) {
+    // ...
+} finally {
+    // ...
+}
+----
+
+== Try-with-resource on multiple resources
+
+Multiple resources are compiled as nested try-with-resource code blocks.
+
+[source,java,lineums]
+.Original code
+----
+try (AutoCloseable resource1 = new ClosableResource();
+     AutoCloseable resource2 = new ClosableResource()) {
+    // ...
+}
+----
+
+[source,java,linenums]
+.Compiled code equivalent (using basic try-with-resource for code brevity)
+----
+try (AutoCloseable resource1 = new ClosableResource()) {
+    try (AutoCloseable resource2 = new ClosableResource()) {
+        // ...
+    }
+}
+----
+
+
