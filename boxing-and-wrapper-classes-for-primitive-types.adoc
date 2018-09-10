@@ -1,0 +1,79 @@
+= Internals of Boxing and Wrapper Classes for Primitive Types
+
+== Wrapper Classes for Primitive Types
+
+The types `Boolean`, `Byte`, `Short`, `Integer`, `Long`, `Float` and `Double` are internally really nothing more than wrapper classes for primitive values. In each of these classes, the primitive value itself is stored in a private final field named `value`. See an excerpt taken from the implementation of Integer as an example.
+
+[source,java]
+----
+public final class Integer extends Number implements Comparable<Integer> {
+
+    // Other methods omitted for brevity
+
+    private final int value;
+
+    public Integer(int value) {
+        this.value = value;
+    }
+}
+----
+
+== Autoboxing and unboxing
+
+The java language provides automatic conversion between primitive types and their wrapper counterparts. The conversion from primitive type to wrapped type is called autoboxing and the conversion of wrapped types to primitive types is referred to as unboxing.
+
+Autoboxing of primitive types into wrapper object is internally compiled as calls to a static `valueOf` conversion method on the respective boxed classes. The unboxing such wrapper object into primitive types, on the other hand, are compiled as calls to conversion methods of the boxed instances.
+
+The following example shows the actual implementation behind boxing and unboxing an `int` value.
+
+[source,java]
+.Original code
+----
+Integer boxedInt = 1;
+int primitive = boxed;
+----
+
+[source,java]
+.Compiled equivalent
+----
+Integer boxed = Integer.valueOf(1);
+int primitive = boxed.intValue();
+----
+
+Refer to the following table for the names of the methods used for unboxing each type of boxed object.
+
+|===
+|Boxed type|Method used for unwrapping
+
+|`Boolean` |`booleanValue()`
+|`Byte`    |`byteValue()`
+|`Short`   |`shortValue()`
+|`Integer` |`intValue()`
+|`Long`    |`longValue()`
+|`Float`   |`floatValue()`
+|`Double`  |`doubleValue()`
+|===
+
+== Modifying boxed objects
+
+Because boxed objects are immutable by design, operations on these types generally require the unboxing and re-boxing of the primitive value. One such example can be seen in the following code sample, where the variable `boxed` is incremented by one.
+
+[source,java]
+.Original code
+----
+Integer boxed = 1;
+++boxed;
+----
+
+[source,java]
+.Compiled equivalent
+----
+Integer boxed = Integer.valueOf(1);
+boxed = Integer.valueOf(boxed.intValue() + 1);
+----
+
+== Caching of boxed objects
+
+TODO
+
+// JLS 5.1.7: Range [-128, 127] must be interned
