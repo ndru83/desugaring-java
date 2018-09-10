@@ -38,32 +38,6 @@ The `for` and `while` statements above both compile into the exact same bytecode
 13: return
 ----
 
-== Enhanced `for` loops (over `Iterables`)
-
-Enhanced `for` loops over iterables compile into a while loop equivalent using the iterable / iterator api.
-
-[source,java]
-.Original code
-----
-for (String value : iterable) {
-    // ...
-}
-----
-
-[source,java]
-.Compiled equivalent
-----
-$iterator = iterable.iterator();       // 1
-while ($iterator.hasNext()) {          // 2
-    String value = $iterator.next();   // 3
-    // ...
-}
-----
-
-. The `Iterator<T>` object is retrived.
-. The loop will continue as long as `hasNext()` returns `true`. 
-. The Iterator's `next()` method is called to retrieve the current item and to advance the iterator.
-
 == Enhanced `for` loops (over arrays)
 
 Enhanced `for` loops over arrays compile into while loops that are almost identical to that of regular `for` loops iterating over an entire array.
@@ -90,3 +64,29 @@ while ($i < $length) {
 ----
 
 Note, that the result of the inital array expression needs to be stored in an unnamed variable, because the re-evaluation of the expression might not be side-effect free.
+
+== Enhanced `for` loops (over `Iterables`)
+
+Enhanced `for` loops over iterables compile into a while loop equivalent using the iterable / iterator api.
+
+[source,java]
+.Original code
+----
+for (String value : iterable) {
+    // ...
+}
+----
+
+[source,java]
+.Compiled equivalent
+----
+$iterator = iterable.iterator();       // 1
+while ($iterator.hasNext()) {          // 2
+    String value = $iterator.next();   // 3
+    // ...
+}
+----
+
+. The `Iterator<T>` object is retrived.
+. The loop will continue as long as `hasNext()` returns `true`. 
+. The Iterator's `next()` method is called to retrieve the current item and to advance the iterator.
