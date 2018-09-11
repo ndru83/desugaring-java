@@ -2,7 +2,7 @@
 
 == Wrapper Classes for Primitive Types
 
-The types `Boolean`, `Byte`, `Short`, `Integer`, `Long`, `Float` and `Double` are internally really nothing more than wrapper classes for primitive values. In each of these classes, the primitive value itself is stored in a private final field named `value`. See an excerpt taken from the implementation of Integer as an example.
+The types `Boolean`, `Byte`, `Short`, `Character`, `Integer`, `Long`, `Float` and `Double` are internally really nothing more than wrapper classes for primitive values. In each of these classes, the primitive value itself is stored in a private final field named `value`. See an excerpt taken from the implementation of Integer as an example.
 
 [source,java]
 ----
@@ -45,13 +45,14 @@ Refer to the following table for the names of the methods used for unboxing each
 |===
 |Boxed type|Method used for unwrapping
 
-|`Boolean` |`booleanValue()`
-|`Byte`    |`byteValue()`
-|`Short`   |`shortValue()`
-|`Integer` |`intValue()`
-|`Long`    |`longValue()`
-|`Float`   |`floatValue()`
-|`Double`  |`doubleValue()`
+|`Boolean`  |`boolean booleanValue()`
+|`Byte`     |`byte byteValue()`
+|`Short`    |`short shortValue()`
+|`Character`|`char charValue()`
+|`Integer`  |`int intValue()`
+|`Long`     |`long longValue()`
+|`Float`    |`float floatValue()`
+|`Double`   |`double doubleValue()`
 |===
 
 == Modifying boxed objects
