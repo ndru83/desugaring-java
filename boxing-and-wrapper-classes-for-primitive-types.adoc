@@ -75,6 +75,54 @@ boxed = Integer.valueOf(boxed.intValue() + 1);
 
 == Caching of boxed objects
 
-TODO
+For performance reasons, wrapper object representing the following ranges of primitive values are cached by the Java Runtime. 
 
-// JLS 5.1.7: Range [-128, 127] must be interned
+|===
+|Type|Range
+
+|bool                   |`true`, `false`
+|char                   |`\u0000` to `\u007f`
+|byte, short, int, long*|`-128` to `127`
+|===
+
+Creating wrapper objects for values in the above ranges by either autoboxing or by calling a type's static `valueOf` method is always expected to yield same cached object instance. 
+
+[source,java]
+----
+Integer a1 = 127, a2 = 127;
+Integer b1 = 128, b2 = 128;
+
+assert(a1 == a2);
+assert(a1 == Integer.valueOf(127));
+
+assert(a1.equals(a2));
+assert(b1.equals(b2));
+----
+
+NOTE: `Long` wrapper objects created for the listed range of values are generally cached, but this is not required by the Java Specification.
+
+No such guareties should be expected for values outside the listed ranges and for objects created with a wrapper type's constructor. The following statements therefore will most likely print "false".
+
+[source,java]
+----
+Integer a = 127;
+Integer b1 = 128, b2 = 128;
+
+System.out.println(a == new Integer(127));      // false
+
+System.out.println(b1 == b2);                   // false
+System.out.println(b1 == Integer.valueOf(128)); // false
+System.out.println(b1 == new Integer(128));     // false
+----
+
+Internally, the caching of wrapper objects for primitive values is implemented in a given type's static `valueOf` method. This behavior extends to objects created by autoboxing, because the boxing semantics involve the calling the appropriate `valueOf` method for a given value type. The caches are eagerly populated at the loading of the wrapper class.
+
+[source,java]
+.Caching as implemented in OpenJDK's Integer.valueOf()
+----
+public static Integer valueOf(int i) {
+    if (i >= IntegerCache.low && i <= IntegerCache.high)
+        return IntegerCache.cache[i + (-IntegerCache.low)];
+    return new Integer(i);
+}
+----
