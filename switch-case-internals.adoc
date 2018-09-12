@@ -1,0 +1,55 @@
+= Java switch-case internals
+
+Switch-case statements are internally implemented with either `tableswitch` or `lookupswitch` bytecode instructions. Both instructions function by popping the stack for an integer value, and selecting a jump offset associated with the popped value.
+
+== The `tableswitch` instruction
+
+The `tableswitch` instruction is a variable length instruction used for selecting and executing a jump based on a jump-table defined over a sorted, continous list of possible integer values. Tool, such as javap, might represent the `tableswitch` instruction textually in ways similar to the following example.
+
+[source]
+----
+tableswitch   { // 3 to 5
+    3: 50
+    4: 39
+    5: 28
+    default: 61
+}
+----
+
+The instruction described above will pop the stack for an integer value and for values ranging from 3 to 5 perform a jump to the noted program address. For values outside the defined 3 to 5 range, the instruction will preform a jump to the address noted under the default label.
+
+The structure of the `tableswitch` instruction is as follows:
+
+[cols=",100%"]
+|===
+|Data type |Description
+
+|ubyte8    |`tableswitch` opcode (0xAA)
+|-         |Padding of (0-3) bytes so that the next value starts on a byte offset, which is a multiple of 4.
+|uint32    |Default offset
+|uint32    |Low value
+|uint32    |High value    
+|uint32    |Jump offset 1, associated with value _low_
+|...       |...
+|uint32    |Jump offset n, associated with value _high_ (_low_ + n - 1)
+|===
+
+== The `lookupswitch` instruction
+
+TODO
+
+== Implementing java switches over numeric values
+
+TODO
+
+== Optimizing switches over sparse values
+
+TODO
+
+== Implementing java switches over String values
+
+TODO
+
+== Implementing java switches over Enum values
+
+TODO
