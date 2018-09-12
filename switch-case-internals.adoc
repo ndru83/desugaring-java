@@ -34,6 +34,20 @@ The structure of the `tableswitch` instruction is as follows:
 |uint32    |Jump offset n, associated with value _high_ (_low_ + n - 1)
 |===
 
+The operations performed by the execution of the `switchtable` instruction can be illustrated with the following pseudo-code.
+
+[source,java]
+----
+int value = pop();
+if (value < lowValue || value > highValue) {
+    pc += defaultOffset;
+} else {
+    pc += jumpOffset[value - lowValue];
+}
+----
+
+The `pop()` expression in the above code represents the instruction popping the stack for an integer value and the `pc` variable stands for the _program counter_ register, storing the address of the next instruction to be executed by the JVM.
+
 == The `lookupswitch` instruction
 
 TODO
