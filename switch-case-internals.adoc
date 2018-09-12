@@ -16,17 +16,17 @@ tableswitch   { // 3 to 5
 }
 ----
 
-The instruction described above will pop the stack for an integer value and for values ranging from 3 to 5 perform a jump to the noted program address. For values outside the defined 3 to 5 range, the instruction will preform a jump to the address noted under the default label.
+The instruction described above will pop the stack for an integer value and for values ranging from 3 to 5 perform a jump to the noted program address. For values outside the defined 3 to 5 range, the instruction will preform a jump to the address noted under the default label. Note, that the actual bytecode instruction uses relative offset values rather than the absolute addresses reported by javap.
 
-The structure of the `tableswitch` instruction is as follows:
+The bytecode structure of the `tableswitch` instruction is as follows:
 
 [cols=",100%"]
 |===
 |Data type |Description
 
 |ubyte8    |`tableswitch` opcode (0xAA)
-|-         |Padding of (0-3) bytes so that the next value starts on a byte offset, which is a multiple of 4.
-|uint32    |Default offset
+|-         |Padding of (0-3) bytes so that the start of the default jump offset field falls on a address, which is a multiple of 4.
+|uint32    |Default jump offset
 |uint32    |Low value
 |uint32    |High value    
 |uint32    |Jump offset 1, associated with value _low_
@@ -50,13 +50,78 @@ The `pop()` expression in the above code represents the instruction popping the 
 
 == The `lookupswitch` instruction
 
-TODO
+The `lookupswitch` instruction is used performing branching based on a list of key-offset pairs. This instruction is not as fast as `tableswitch` instruction, but allows branching on a list of individual values, rather than continous ranges of values. This branching instruction essentially trades computational efficiency for space efficiency in cases where the branching must be performed on a sparse non-continous set of values.
+
+A sample `lookupswitch` as printed by javap might look something like the following:
+
+[source]
+----
+lookupswitch { // 3
+    0: 36
+    1: 47
+    500: 58
+    default: 69
+}
+----
+
+This instruction will pop the stack for an integer value, then will search it's list of key-jump offset pairs for a matching value. The list of pairs are sorted by key to allow a better-than-linear searching.
+
+If a matching key is found in the list, a jump will be performed using the associated jump offset. I case no matching key is found, the instruction will instead perform a jump based on the default jump offset of the instruction.
+
+Note, that the actual bytecode instruction uses relative offset values rather than the absolute addresses reported by javap.
+
+The bytecode structure of the `lookupswitch` instruction is as follows:
+
+[cols=",100%"]
+|===
+|Data type |Description
+
+|ubyte8    |`lookupswitch` opcode (0xAB)
+|-         |Padding of (0-3) bytes so that the start of the default jump offset field falls on a address, which is a multiple of 4.
+|uint32    |Default jump offset
+|uint32    |Number of key-offset pairs
+|uint32    |Value of key 1
+|uint32    |Jump offset for key 1
+|...       |...
+|uint32    |Value of key n
+|uint32    |Jump offset for key n
+|===
+
+=== Optimizing switches over sparse values
+
+As stated previously, the `lookupswitch` instruction allows branching over a non-continous set of values at a cost performance. A tricks employed by compilers can however still allow the use of the faster `tableswitch` instruction even when working with sparse values.
+
+With small enough gaps between switch values, the compiler may decide to "fill in" the gaps with dummy jumps, essentially creating a continous range of values over witch the faster `tableswitch` instruction can operate.
+
+See the following `lookupswitch` instruction over the sparse value set of 0, 1, 3 and 5 as an example.
+
+[source]
+----
+lookupswitch   { // 4
+    0: 40
+    1: 51
+    3: 62
+    5: 73
+    default: 84
+}
+----
+
+By inserting values 2 and 4 as jumps to the default offset (84), the instruction can be converted into the following faster `tableswitch` instruction:
+
+[source]
+----
+tableswitch   { // 0 to 5
+    0: 40
+    1: 51
+    2: 84   // dummy case
+    3: 62
+    4: 84   // dummy case
+    5: 73
+    default: 84
+}
+----
 
 == Implementing java switches over numeric values
-
-TODO
-
-== Optimizing switches over sparse values
 
 TODO
 

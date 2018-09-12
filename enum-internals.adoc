@@ -277,7 +277,7 @@ public static <T extends Enum<T>> T valueOf(Class<T> enumType, String name) {
 }
 ----
 
-The _enum constant directory_, is a lazily built `Map<String, T>` structure stored by enum Class objects, mapping constant names to references of actual enum constant. The `enumConstantDirectory()` method builds the lookup map from data returned by the very same reflection-based `getEnumConstantsShared()` method used by the previously discussed `Class.getEnumConstants()` method.
+The _enum constant directory_ is a lazily built `Map<String, T>` structure stored by enum Class objects, mapping constant names to references of actual enum constant. The `enumConstantDirectory()` method builds the lookup map from data returned by the very same reflection-based `getEnumConstantsShared()` method used by the previously discussed `Class.getEnumConstants()` method.
 
 [source,java]
 .Internal implementation of `Class.enumConstantDirectory()`
