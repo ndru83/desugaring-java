@@ -9,9 +9,9 @@ The `tableswitch` instruction is a variable length instruction used for selectin
 [source]
 ----
 tableswitch   { // 3 to 5
-    3: 50
-    4: 39
-    5: 28
+        3: 50
+        4: 39
+        5: 28
     default: 61
 }
 ----
@@ -57,9 +57,9 @@ A sample `lookupswitch` as printed by javap might look something like the follow
 [source]
 ----
 lookupswitch { // 3
-    0: 36
-    1: 47
-    500: 58
+        0: 36
+        1: 47
+        500: 58
     default: 69
 }
 ----
@@ -117,10 +117,10 @@ See the following `lookupswitch` instruction over the sparse value set of 0, 1, 
 [source]
 ----
 lookupswitch   { // 4
-    0: 40
-    1: 51
-    3: 62
-    5: 73
+        0: 40
+        1: 51
+        3: 62
+        5: 73
     default: 84
 }
 ----
@@ -145,6 +145,42 @@ Using a `tableswitch` instead of a `lookupswitch` in cases such as these is a de
 == Implementing java switches over numeric values
 
 TODO
+
+[source,java]
+----
+switch (a) {
+    case 0:
+        System.out.println("zero");
+        break;
+    case 1:
+        System.out.println("one");
+        break;
+    case 2:
+        System.out.println("two");
+        break;
+    default:
+        System.out.println("other");
+}
+----
+
+[source]
+----
+0: iload_0
+1: tableswitch   { // 0 to 2
+            0: 28
+            1: 39
+            2: 50
+        default: 61
+    }
+28: ...                 // System.out.println("zero");
+36: goto          69    // break;
+39: ...                 // System.out.println("one");
+47: goto          69    // break;
+50: ...                 // System.out.println("two");
+58: goto          69    // break;
+61: ...                 // System.out.println("other");
+69: return
+----
 
 == Implementing java switches over String values
 
