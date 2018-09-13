@@ -106,6 +106,8 @@ The _hi_ and _lo_ parameters are the highest and lowest value switch keys used i
 
 The overall space/time cost of using a specific instruction is calculated by using the formula: `spaceCost + timeCost * 3`.
 
+NOTE: An interesting property the cost formula governing code compilation is that switch statements with a less than 3 labels and no gaps between the keys will compile as `lookupswitch` instructions. This is because, for such few labels, the calculated costs of `lookupswitch`, are still lower than those of the `tableswitch` alternative. The performance benefits of `tableswitch` only start to outperform `lookupswitch` as the number of labels reaches 3.
+
 == Using `tableswitch` over a non-continuous range of keys
 
 Choosing between `tableswitch` and `lookupswitch` based on space/time cost analysis can lead to situations where a `tableswitch` instruction needs to operate over a non-continuous range of key values. The compiler will resolve this problem by filling in the gaps between the sparse keys with jumps to the default label of the switch statement.
