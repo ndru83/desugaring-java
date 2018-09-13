@@ -87,11 +87,28 @@ The bytecode structure of the `lookupswitch` instruction is as follows:
 |uint32    |Jump offset for key n
 |===
 
-=== Optimizing switches over sparse values
+== Choosing the right switch instruction
 
-As stated previously, the `lookupswitch` instruction allows branching over a non-continous set of values at a cost performance. A tricks employed by compilers can however still allow the use of the faster `tableswitch` instruction even when working with sparse values.
+When compiling a given switch statement the java compiler has to make a decision between either emitting a `tableswitch` or a `lookupswitch` instruction. This decision is based on the time/space complexity costs associated with each instruction.
 
-With small enough gaps between switch values, the compiler may decide to "fill in" the gaps with dummy jumps, essentially creating a continous range of values over witch the faster `tableswitch` instruction can operate.
+The compiler will stick with the `tableswitch` instruction as long as the space and time costs for doing so are lower or equal to the cost of using `lookupswitch`.
+
+The table used for calculating space/time costs for the two instruction types is the following:
+
+|===
+|Opcode        |Space cost       |Time cost
+
+|`tableswitch` |4 + (hi - lo + 1)|3
+|`lookupswitch`|3 + 2 * nlabels  |nlabels
+|===
+
+The _hi_ and _lo_ parameters are the highest and lowest value switch keys used in the switch statement and _nlabels_ is the number of switch keys.
+
+The overall space/time cost of using a specific instruction is calculated by using the formula: `spaceCost + timeCost * 3`.
+
+== Using `tableswitch` over a non-continous ranges of keys
+
+Choosing between `tableswitch` and `lookupswitch` based on space/time cost analysis can lead to situations where a `tableswitch` instruction needs to operate over a non-continous range of key values. The compiler will resolve this problem by filling in the gaps between the sparse keys with jumps to the default label of the switch statement.
 
 See the following `lookupswitch` instruction over the sparse value set of 0, 1, 3 and 5 as an example.
 
@@ -106,7 +123,7 @@ lookupswitch   { // 4
 }
 ----
 
-By inserting values 2 and 4 as jumps to the default offset (84), the instruction can be converted into the following faster `tableswitch` instruction:
+By inserting values 2 and 4 as jumps to the default offset (84), the instruction can be converted into a semantically equivalent `tableswitch` instruction:
 
 [source]
 ----
@@ -120,6 +137,8 @@ tableswitch   { // 0 to 5
     default: 84
 }
 ----
+
+Using a `tableswitch` instead of a `lookupswitch` in cases such as these is a decision to trade the space efficiency provided by sparse keys for the constant time lookup of a table-based approach.
 
 == Implementing java switches over numeric values
 
