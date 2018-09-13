@@ -106,7 +106,7 @@ The _hi_ and _lo_ parameters are the highest and lowest value switch keys used i
 
 The overall space/time cost of using a specific instruction is calculated by using the formula: `spaceCost + timeCost * 3`.
 
-== Using `tableswitch` over a non-continous ranges of keys
+== Using `tableswitch` over a non-continous range of keys
 
 Choosing between `tableswitch` and `lookupswitch` based on space/time cost analysis can lead to situations where a `tableswitch` instruction needs to operate over a non-continous range of key values. The compiler will resolve this problem by filling in the gaps between the sparse keys with jumps to the default label of the switch statement.
 
