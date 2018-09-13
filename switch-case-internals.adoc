@@ -4,7 +4,7 @@ Switch-case statements are internally implemented with either `tableswitch` or `
 
 == The `tableswitch` instruction
 
-The `tableswitch` instruction is a variable length instruction used for selecting and executing a jump based on a jump-table defined over a sorted, continous list of possible integer values. Tool, such as javap, might represent the `tableswitch` instruction textually in ways similar to the following example.
+The `tableswitch` instruction is a variable length instruction used for selecting and executing a jump based on a jump-table defined over a sorted, continuous list of possible integer values. Tool, such as javap, might represent the `tableswitch` instruction textually in ways similar to the following example.
 
 [source]
 ----
@@ -50,7 +50,7 @@ The `pop()` expression in the above code represents the instruction popping the 
 
 == The `lookupswitch` instruction
 
-The `lookupswitch` instruction is used performing branching based on a list of key-offset pairs. This instruction is not as fast as `tableswitch` instruction, but allows branching on a list of individual values, rather than continous ranges of values. This branching instruction essentially trades computational efficiency for space efficiency in cases where the branching must be performed on a sparse non-continous set of values.
+The `lookupswitch` instruction is used performing branching based on a list of key-offset pairs. This instruction is not as fast as `tableswitch` instruction, but allows branching on a list of individual values, rather than continuous ranges of values. This branching instruction essentially trades computational efficiency for space efficiency in cases where the branching must be performed on a sparse non-continuous set of values.
 
 A sample `lookupswitch` as printed by javap might look something like the following:
 
@@ -106,9 +106,9 @@ The _hi_ and _lo_ parameters are the highest and lowest value switch keys used i
 
 The overall space/time cost of using a specific instruction is calculated by using the formula: `spaceCost + timeCost * 3`.
 
-== Using `tableswitch` over a non-continous range of keys
+== Using `tableswitch` over a non-continuous range of keys
 
-Choosing between `tableswitch` and `lookupswitch` based on space/time cost analysis can lead to situations where a `tableswitch` instruction needs to operate over a non-continous range of key values. The compiler will resolve this problem by filling in the gaps between the sparse keys with jumps to the default label of the switch statement.
+Choosing between `tableswitch` and `lookupswitch` based on space/time cost analysis can lead to situations where a `tableswitch` instruction needs to operate over a non-continuous range of key values. The compiler will resolve this problem by filling in the gaps between the sparse keys with jumps to the default label of the switch statement.
 
 See the following `lookupswitch` instruction over the sparse value set of 0, 1, 3 and 5 as an example.
 
