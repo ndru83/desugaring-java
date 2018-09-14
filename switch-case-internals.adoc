@@ -277,3 +277,59 @@ switch(a.hashCode()) {
 == Implementing java switches over Enum values
 
 TODO
+
+[source,java]
+----
+public enum CustomEnum {
+    ONE, TWO, THREE
+}
+----
+
+[source,java]
+----
+switch (a) {
+    case ONE:
+        System.out.println("one");
+        break;
+    case TWO:
+        System.out.println("two");
+        break;
+    case THREE:
+        System.out.println("three");
+        break;
+    default:
+        System.out.println("other");
+}
+----
+
+[source,java]
+----
+static class $Inner1 {
+
+    static final int[] $SwitchMap$CustomEnum;
+
+    static {
+        $SwitchMap$CustomEnum = new int[CustomEnum.values().length];
+        $SwitchMap$CustomEnum[CustomEnum.ONE.ordinal()] = 1;
+        $SwitchMap$CustomEnum[CustomEnum.TWO.ordinal()] = 2;
+        $SwitchMap$CustomEnum[CustomEnum.THREE.ordinal()] = 3;
+    }
+}
+----
+
+[source,java]
+----
+switch($Inner1.$SwitchMap$CustomEnum[a.ordinal()]) {
+    case 1:
+        System.out.println("one");
+        break;
+    case 2:
+        System.out.println("two");
+        break;
+    case 3:
+        System.out.println("three");
+        break;
+    default:
+        System.out.println("other");
+}
+----
