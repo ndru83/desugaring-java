@@ -186,6 +186,94 @@ switch (a) {
 
 TODO
 
+[source,java]
+----
+switch (a) {
+    case "aaa":
+        System.out.println("aaa");
+        break;
+    case "bbb":
+        System.out.println("bbb");
+        break;
+    case "ccc":
+        System.out.println("ccc");
+        break;
+    default:
+        System.out.println("other");
+}
+----
+
+[source,java]
+----
+byte $var2 = -1;
+switch(a.hashCode()) {
+    case 96321:
+        if (a.equals("aaa")) {
+            $var2  = 0;
+        }
+        break;
+    case 97314:
+        if (a.equals("bbb")) {
+            $var2  = 1;
+        }
+        break;
+    case 98307:
+        if (a.equals("ccc")) {
+            $var2  = 2;
+        }
+}
+----
+
+[source,java]
+----
+switch($var2) {
+    case 0:
+        System.out.println("aaa");
+        break;
+    case 1:
+        System.out.println("bbb");
+        break;
+    case 2:
+        System.out.println("ccc");
+        break;
+    default:
+        System.out.println("other");
+}
+----
+
+[source,java]
+----
+switch (a) {
+    case "aaa":
+        System.out.println("aaa");
+        break;
+    case "FB":
+        System.out.println("FB");
+        break;
+    case "Ea":
+        System.out.println("Ea");
+        break;
+}
+----
+
+[source,java]
+----
+byte $var2 = -1;
+switch(a.hashCode()) {
+    case 2236:
+        if (a.equals("Ea")) {
+            $var2 = 2;
+        } else if (a.equals("FB")) {
+            $var2 = 1;
+        }
+        break;
+    case 96321:
+        if (a.equals("aaa")) {
+            $var2 = 0;
+        }
+}
+----
+
 == Implementing java switches over Enum values
 
 TODO
