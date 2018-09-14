@@ -142,9 +142,11 @@ tableswitch   { // 0 to 5
 
 Using a `tableswitch` instead of a `lookupswitch` in cases such as these is a decision to trade the space efficiency provided by sparse keys for the constant time lookup of a table-based approach.
 
-== Implementing java switches over numeric values
+== Implementing java switches over byte, short, char, and int values
 
-TODO
+Java switches over numeric values are amongst the java statements where the compiled form of the statement resemble very closely that of the original source code.
+
+Consider the following sample code as an example:
 
 [source,java]
 ----
@@ -162,6 +164,8 @@ switch (a) {
         System.out.println("other");
 }
 ----
+
+The code compiled from the above source is the following:
 
 [source]
 ----
@@ -181,6 +185,14 @@ switch (a) {
 61: ...                 // System.out.println("other");
 69: return
 ----
+
+Probably the first noticeable feature of the compiled code is, that case labels were removed from what used to be the switch body and are sorted and integrated into switch's tableswitch/lookupswitch instruction.
+
+Unlike the keys themselves, compiler will preserves the ordering each `case` block, inserting a `goto` instruction in place of every `break` statement. Each such `goto` instruction is set up to redirect the flow of execution to the fist statement after the switch construct. Any `case` blocks omitting the `break` statement will likewise be missing their respective `goto` instructions, allowing the execution to "fall through" into the next case label. 
+
+In the absence of a default label, the compiled `tableswitch`/`lookupswitch` instruction will have it's _default jump offset_ set to the offset of the first statement following the switch construct.
+
+Switching over `long` values is not supported, unless the value is manually downcast to `int`. This limitation is most likely imposed because the `tableswitch` and `lookupswitch` structures store ranges and key values as unsigned 32-bit integers.
 
 == Implementing java switches over String values
 
