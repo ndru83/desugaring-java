@@ -196,9 +196,12 @@ Switching over `long` values is not supported, unless the value is manually down
 
 == Implementing java switches over String values
 
-TODO
+The first Java version to support switching over `Strings` values was JDK 7. Interestingly, this support was introduced with the help of some additional compiler trickery as none of underlying `tableswitch` and `lookupswitch` instructions actually work on anything other than numeric data. 
+
+See the following switch as an example:
 
 [source,java]
+.Original code
 ----
 switch (a) {
     case "aaa":
@@ -215,7 +218,10 @@ switch (a) {
 }
 ----
 
+Switch statements, like the one used in the above code are compiled as a series of two consecutive `switch` statements. The first `switch` branches over the hash codes of each `string` label, mapping them to a unique 0-base index, or in the case of missing values, the `-1` magic constant. Possible hash collisions are guarded against by performing additional equality checks against the label values.
+
 [source,java]
+.Compiled code, mapping string labels to id's
 ----
 byte $var2 = -1;
 switch(a.hashCode()) {
@@ -236,7 +242,10 @@ switch(a.hashCode()) {
 }
 ----
 
+The second half of the switch pair is a compiled version of the source code original, modified to switch over the numeric labels resolved by the previous switch.
+
 [source,java]
+.Compiled code, switching over mapped string id's
 ----
 switch($var2) {
     case 0:
@@ -253,7 +262,12 @@ switch($var2) {
 }
 ----
 
+=== Switching over string labels with non-unique hash codes
+
+Hash collisions between distinct string labels require additional equality checks to be performed against possible string values. The following example is intended to showcase this behavior by using the string labels `"Ea"` and `"FB"`, that, despite having distinct values, share a single hash code.
+
 [source,java]
+.Original code
 ----
 switch (a) {
     case "aaa":
@@ -268,7 +282,10 @@ switch (a) {
 }
 ----
 
+The code generated for mapping the above labels into unique identifiers will contain equality checks for `"Ea"` and `"FB"` under the same hash label:
+
 [source,java]
+.Compiled code, mapping non-unique hashes to id's
 ----
 byte $var2 = -1;
 switch(a.hashCode()) {
