@@ -305,16 +305,18 @@ switch(a.hashCode()) {
 
 == Implementing java switches over Enum values
 
-TODO
+Switching over Enum values present a similar problem to using Strings: internally switch statements can only operate on numeric data. To solve this problem, switch statements have to rely on the numeric ordinal value of an Enum object, provided by the `int ordinal()` method. Unfortunately, the ordinal values are only part of the runtime state of enum constant objects and, as such, are not available during the compilation process. To overcome this limitation, the Java compiler needs to generate additional lookup structures in the form of static inner classes that, when loaded, can bootstrap themselves with the ordinal values available at runtime. To demonstrate this, consider the following Enum class and switch statement as an example.
 
 [source,java]
+.Enum class
 ----
-public enum CustomEnum {
+public enum SomeEnum {
     ONE, TWO, THREE
 }
 ----
 
 [source,java]
+.Original switch
 ----
 switch (a) {
     case ONE:
@@ -331,24 +333,30 @@ switch (a) {
 }
 ----
 
-[source,java]
-----
-static class $Inner1 {
+Assuming that, the above `switch` statement is used in a class named "Outer", the generated helper class would look something like the following:
 
-    static final int[] $SwitchMap$CustomEnum;
+[source,java]
+.Generated helper class with enum lookup table
+----
+static class Outer$1 {
+
+    static final int[] $SwitchMap$SomeEnum;
 
     static {
-        $SwitchMap$CustomEnum = new int[CustomEnum.values().length];
-        $SwitchMap$CustomEnum[CustomEnum.ONE.ordinal()] = 1;
-        $SwitchMap$CustomEnum[CustomEnum.TWO.ordinal()] = 2;
-        $SwitchMap$CustomEnum[CustomEnum.THREE.ordinal()] = 3;
+        $SwitchMap$SomeEnum = new int[SomeEnum.values().length];
+        $SwitchMap$SomeEnum[SomeEnum.ONE.ordinal()] = 1;
+        $SwitchMap$SomeEnum[SomeEnum.TWO.ordinal()] = 2;
+        $SwitchMap$SomeEnum[SomeEnum.THREE.ordinal()] = 3;
     }
 }
 ----
 
+For each `Enum` used in switch statements of a class a single `static final int[]` field is generated to act as the lookup table of the type. The table is populated by the static constructor of the helper class to map `Enum` constant ordinals to compiler-assigned numeric case identifiers. Enum constants not used in the switch statement are conveniently assigned the `0` case identifier and thus require no explicit initialization. With the help of the generated lookup table, the original switch can be compiled into as switch over numeric case labels.
+
 [source,java]
+.Compiled switch, branching over numeric values
 ----
-switch($Inner1.$SwitchMap$CustomEnum[a.ordinal()]) {
+switch(Outer$1.$SwitchMap$SomeEnum[a.ordinal()]) {
     case 1:
         System.out.println("one");
         break;
