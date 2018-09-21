@@ -52,7 +52,7 @@ static {
         Example.TWO,
         Example.THREE
     };
-};
+}
 ----
 
 The `values()` method is added to allow access to a clone of the `$VALUES` array.
@@ -100,7 +100,7 @@ public final class Example extends Enum<Example> {
         Example.TWO,
         Example.THREE
     };
-  };
+  }
 
   public static Example[] values() {
     return (Example[]) $VALUES.clone();
@@ -130,7 +130,6 @@ public enum Example {
     Example(String someString, int someInt) {
         // ctor body 2
     }
-    
 }
 ----
 
@@ -164,7 +163,7 @@ static {
         Example.TWO,
         Example.THREE
     };
-};
+}
 ----
 
 Other than the differences outlined above, enum classes with non-default constructors are compiled just like basic enums.
@@ -194,30 +193,97 @@ public enum MessageStatus {
 }
 ----
 
-Class bodies of enum constants are implemented as anonymous classes of the enum as can be seen in the static initializer compiled for the example enum:
+Class bodies of enum constants are compiled as anonymous classes extending the original enum. To allow this, the base enum itself will no longer be marked as a `final` and is compiled into a class similar to the following:
 
 [source,java]
 ----
-static {
-    MessageStatus.INIT = new MessageStatus("INIT", 0);
-    MessageStatus.PENDING = new MessageStatus("PENDING", 1);
-    MessageStatus.COMPLETED = new MessageStatus("COMPLETED", 2);
-    MessageStatus.FAILED = new MessageStatus("FAILED", 3) {
-        @Override
-        public boolean isErroneous() {
-            return true;
-        }
-    };
-    MessageStatus.$VALUES = new MessageStatus[] {
-        MessageStatus.INIT,
-        MessageStatus.PENDING,
-        MessageStatus.COMPLETED,
-        MessageStatus.FAILED
-    };
-};
+public class MessageStatus extends Enum<MessageStatus> {
+
+    // Omitting some members for brevity
+    // (...) 
+
+    static {
+        MessageStatus.INIT = new MessageStatus("INIT", 0);
+        MessageStatus.PENDING = new MessageStatus("PENDING", 1);
+        MessageStatus.COMPLETED = new MessageStatus("COMPLETED", 2);
+        MessageStatus.FAILED = new MessageStatus("FAILED", 3) {
+            @Override
+            public boolean isErroneous() {
+                return true;
+            }
+        };
+        MessageStatus.$VALUES = new MessageStatus[] {
+            MessageStatus.INIT,
+            MessageStatus.PENDING,
+            MessageStatus.COMPLETED,
+            MessageStatus.FAILED
+        };
+    }
+
+    public boolean isErroneous() {
+        return false;
+    }
+}
 ----
 
-== Futher enum-related internals
+== Enums with abstract methods
+
+Enums in java may also declare `abstract` methods or inherit them by implementing interfaces. Enum constant of these classes *must*, however, provide an implementation for each `abstract` method. See the following code as an example:
+
+[source,java]
+----
+interface Bar {
+    void doAThing();
+}
+
+public enum Foo implements Bar {
+
+    CONSTANT_A {
+        @Override
+        public void doAThing() {
+            // ...
+        }
+    },
+    CONSTANT_B {
+        @Override
+        public void doAThing() {
+            // ...
+        }
+    }
+}
+----
+
+Such enums will be compiled into `abstract` classes implementing interfaces, similar to the one presented below:
+
+[source,java]
+----
+public abstract class Foo extends Enum<Foo> implements Bar {
+
+    // Omitting members for brevity
+    // (...)
+
+    static {
+        Foo.CONSTANT_A = new Foo("CONSTANT_A", 0) {
+            @Override
+            public void doAThing() {
+                // ...
+            }
+        };
+        Foo.CONSTANT_B = new Foo("CONSTANT_B", 1) {
+            @Override
+            public void doAThing() {
+                // ...
+            }
+        };
+        MessageStatus.$VALUES = new MessageStatus[] {
+            MessageStatus.CONSTANT_A,
+            MessageStatus.CONSTANT_B
+        };
+    }    
+}
+----
+
+== Further enum-related internals
 
 === Internals of `Class.getEnumConstants()`
 
@@ -277,7 +343,7 @@ public static <T extends Enum<T>> T valueOf(Class<T> enumType, String name) {
 }
 ----
 
-The _enum constant directory_ is a lazily built `Map<String, T>` structure stored by enum Class objects, mapping constant names to references of actual enum constant. The `enumConstantDirectory()` method builds the lookup map from data returned by the very same reflection-based `getEnumConstantsShared()` method used by the previously discussed `Class.getEnumConstants()` method.
+The _enum constant directory_ is a lazily built `Map<String, T>` structure stored by enum Class objects, mapping string names to references of actual enum constants. The `enumConstantDirectory()` method builds the lookup map from data returned by the very same reflection-based `getEnumConstantsShared()` method used by the previously discussed `Class.getEnumConstants()` method.
 
 [source,java]
 .Internal implementation of `Class.enumConstantDirectory()`
