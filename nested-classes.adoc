@@ -1,0 +1,242 @@
+= Nested Classes
+
+Nested classes are classes defined within classes. We distinguish between 4 different kinds of nested classes.
+
+* Static inner classes
+* Nested inner classes
+* Method-local inner classes
+* Anonymous Inner classes
+
+Regardless of type, all nested classes share a common feature in that they are compiled into their own separate class files.
+
+== Static inner classes
+
+The relation between static inner classes and their enclosing outer classes is purely structural. A static inner class has no special access to members of the enclosing class, the outer class is only used as a namespace prefix for the inner class. See the following code as an example, where the static a inner class called "Inner" is nested within a class called "Outer".
+
+[source,java]
+----
+public class Outer {
+    public static class Inner {
+        // ...
+    }
+}
+----
+
+The above static inner class can be instantiated by the following expression:
+
+[source,java]
+----
+Outer.Inner inner = new Outer.Inner();
+----
+
+As stated before, static inner classes are compiled into separate class files. In this case the `Inner` class will be renamed `Outer$Inner` and compiled into an `Outer$Inner.class` file. With the class hierarchy flattened, the actual compiled code instantiating the class will look like this:
+
+[source,java]
+.Compiled equivalent
+----
+Outer$Inner inner = new Outer$Inner();
+----
+
+[CAUTION]
+====
+While defining classes with names similar to `Outer$Inner`, while not explicitly prohibited, should be avoided as they _may_ clash with the compiler generated names of nested classes. This will cause the compiler to report an error similar to the following: "Error: duplicate class: Outer.Inner".
+====
+
+== Nested inner classes
+
+Nested inner classes, are all bound to a given instance of their outer class and have full access to all their members, including ones with private visibility. Like static inner classes, nested inner classes are also compiled into separate class files. See the following code as an example, where a nested inner class called "Inner" is nested within a class called "Outer".
+
+[source,java]
+----
+public class Outer {
+
+    public int outerValue = 0;
+
+    public void outerMethod(int value) {
+        // ...
+    }
+
+    public class Inner {
+
+        public void innerMethod(int value) {
+            System.out.println(outerValue);
+            outerValue = value;
+            outerMethod(value);
+        }
+    }
+}
+----
+
+As stated previously, nested inner classes are bound to a specific instance of the outer class they are nested within. As can be seen in the following example, the instantiation of nested inner classes is handled through an instance of the outer class.
+
+[source,java]
+----
+Outer outer = new Outer();
+Outer.Inner inner = outer.new Inner();
+----
+
+Similar to static inner classes, nested inner classes are also renamed and compiled into separate class files. The compiler will also modify the inner class by adding an extra `final` field. This field is most often called `this$0` and is intended to hold a reference to an instance the outer class. The constructor signature of the inner class will be extended to accept an extra 0th parameter of the type of the outer class, and the the constructor code is added instructions that assign this parameter to the aforementioned `this$0` field. Statements that reference `public` members of the outer class will be modified to use reference stored in the `this$0` variable. The compiled equivalent of the example inner class will resemble the following:
+
+[source,java]
+----
+public class Outer$Inner
+    
+    final Outer this$0;
+
+    public Outer$Inner(Outer this$0) {
+        this.this$0 = this$0;
+    }
+
+    public void innerMethod(int value) {
+        System.out.println(this$0.outerValue));
+        this$0.outerValue = value;
+        this$0.outerMethod(value);
+    }
+}
+----
+
+[NOTE]
+====
+The compiler will resolve name clashes between existing class fields and generated `this$0` identifiers, by appending `$` characters to the name of the synthetic field until the clash is finally resolved.
+====
+
+Code used for instantiating the class is also be modified to pass a reference of the outer class as an argument of the newly introduced constructor parameter. The code compiled for the sample demonstrating the instantiation of nested inner classes will therefore resemble the following:
+
+[source,java]
+----
+Outer outer = new Outer();
+Outer$Inner inner = new Outer$Inner(outer);
+----
+
+=== Synthetic accessor methods (JDK 10 and older)
+
+Before the introduction of the notion of nestmates in Java 11, nested inner classes had no special privileged access to the `private` members of their enclosing class. To allow nested inner classes access to these members, the Java compiler essentially had to break the encapsulation of the outer class by introducing static accessor and mutator methods for each private member. This can be demonstrated in the following example:
+
+[source]
+----
+public class Outer {
+
+    private int outerValue = 0;
+    
+    private void outerMethod(int value) {
+        // ...
+    }
+
+    public class Inner {
+
+        public void innerMethod(int value) {
+            System.out.println(outerValue);
+            outerValue = value;
+            outerMethod(value);
+        }
+    }
+}
+----
+
+Examining the compiled equivalent of the `Outer` class, reveals a number of `static` helper methods, generated solely for providing the `Inner` class with access to various private class members.
+
+[source]
+.Compiled equivalent of the Outer class
+----
+public class Outer {
+
+    private int outerValue = 0;
+    
+    private void outerMethod(int value) {
+        // ...
+    }
+
+    // Synthetic accessor of outerValue
+    static int access$000(Outer x0) {
+        return x0.outerValue;
+    }
+
+    // Synthetic mutator of outerValue
+    static int access$002(Outer x0, int x1) {
+        return (x0.outerValue = x1);
+    }
+
+    // Synthetic delegate to outerMethod(int)
+    static void access$100(Outer x0, int x1) {
+        x0.outerMethod(x1);
+    }
+
+}
+----
+
+The code of the `Inner` class is also modified to use the previously generated helper methods when accessing the otherwise restricted members of the outer class.
+
+[source,java]
+.Compiled equivalent of the nested inner class
+----
+public class Outer$Inner
+    
+    final Outer this$0;
+
+    public Outer$Inner(Outer this$0) {
+        this.this$0 = this$0;
+    }
+
+    public void innerMethod(int value) {
+        System.out.println(Outer.access$000(this.this$0));        
+        Outer.access$002(this.this$0, value);
+        Outer.access$100(this.this$0, value);
+    }
+}
+----
+
+[CAUTION]
+====
+Defining methods with names that start with the "access$" prefix should be avoided, because these names _may_ clash with compiler generated helper methods, resulting in compile-time time errors. An example error message signaling such a problem would look something like the following: "Error: The symbol access$000(Outer) conflicts with a compiler-synthesized symbol in Outer".
+====
+
+=== Nest-based access control (Java 11 and newer)
+
+To address the shortcomings of the implementation of nested inner classes discussed in the previous section, Java 11 introduced the notion of _nestmates_. Nestmates introduce a new access control mechanism that allows a nested inner classes (nest members) to access `private` members of their enclosing outer class (the nest host) without the use of synthetic accessor methods, if both classes belong to the same nest. Nests are internally implemented as class attributes on both the enclosing and the nested classes. The enclosing class will have a `NestMembers` attribute, listing the names of all the classes that are "enclosed" within the class. Conversely, the compiled nested inner class will have a `NestHost` attribute set to the name of the enclosing class. 
+
+Nest-based access control functions as follows: A class named _A_ will have access to the `private` members of another class named _B_ if class _A_ has a `NestHost` class attribute set to the class name of _B_ AND class _B_ has a `NestMembers` class attribute containing the class name of `A`.
+
+Recompiling the example class presented under the synthetic methods section with Java 11 will output classes that accesses private members without the use of synthetic accessor methods. Access to private members of the enclosing class will be granted by the JVM based on the nestmate relationship encoded into classes' `NestMembers` and `NestHost` attributes.
+
+[source,java]
+.Compiled Java 11 equivalent of the enclosing outer class
+----
+public class Outer {
+
+    // NestMembers attribute: Outer$Inner
+
+    private int outerValue = 0;
+
+    private void outerMethod(int value) {
+        // ...
+    }
+
+}
+----
+
+[source,java]
+.Compiled Java 11 equivalent of the nested inner class
+----
+
+public class Outer$Inner {
+
+    // NestHost attribute: class Outer
+    
+    final Outer this$0;
+
+    public Outer$Inner(Outer this$0) {
+        this.this$0 = this$0;
+    }
+
+    public void innerMethod(int value) {
+        System.out.println(this$0.outerValue));
+        this$0.outerValue = value;
+        this$0.outerMethod(value);
+    }
+}
+----
+
+
+== Method-local and anonymous classes
+
+TODO
