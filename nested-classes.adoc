@@ -37,10 +37,7 @@ As stated before, static inner classes are compiled into separate class files. I
 Outer$Inner inner = new Outer$Inner();
 ----
 
-[CAUTION]
-====
-While defining classes with names similar to `Outer$Inner`, while not explicitly prohibited, should be avoided as they _may_ clash with the compiler generated names of nested classes. This will cause the compiler to report an error similar to the following: "Error: duplicate class: Outer.Inner".
-====
+CAUTION: While defining classes with names similar to `Outer$Inner`, while not explicitly prohibited, should be avoided as they _may_ clash with the compiler generated names of nested classes. This will cause the compiler to report an error similar to the following: "Error: duplicate class: Outer.Inner".
 
 == Nested inner classes
 
@@ -95,10 +92,7 @@ public class Outer$Inner
 }
 ----
 
-[NOTE]
-====
-The compiler will resolve name clashes between existing class fields and generated `this$0` identifiers, by appending `$` characters to the name of the synthetic field until the clash is finally resolved.
-====
+NOTE: The compiler will resolve name clashes between existing class fields and generated `this$0` identifiers, by appending `$` characters to the name of the synthetic field until the clash is finally resolved.
 
 Code used for instantiating the class is also be modified to pass a reference of the outer class as an argument of the newly introduced constructor parameter. The code compiled for the sample demonstrating the instantiation of nested inner classes will therefore resemble the following:
 
@@ -178,17 +172,14 @@ public class Outer$Inner
     }
 
     public void innerMethod(int value) {
-        System.out.println(Outer.access$000(this.this$0));        
+        System.out.println(Outer.access$000(this.this$0));
         Outer.access$002(this.this$0, value);
         Outer.access$100(this.this$0, value);
     }
 }
 ----
 
-[CAUTION]
-====
-Defining methods with names that start with the "access$" prefix should be avoided, because these names _may_ clash with compiler generated helper methods, resulting in compile-time time errors. An example error message signaling such a problem would look something like the following: "Error: The symbol access$000(Outer) conflicts with a compiler-synthesized symbol in Outer".
-====
+CAUTION: Defining methods with names that start with the `access$` prefix should be avoided, because these names _may_ clash with compiler generated helper methods, resulting in compile-time time errors. An example error message signaling such a problem would look something like the following: "Error: The symbol access$000(Outer) conflicts with a compiler-synthesized symbol in Outer".
 
 === Nest-based access control (Java 11 and newer)
 
@@ -237,6 +228,68 @@ public class Outer$Inner {
 ----
 
 
-== Method-local and anonymous classes
+== Method-local classes
+
+Method local classes are classes that are declared within the bodies of other methods. Method local classes defined within instance methods are essentially nested inner classes, while those defined within static methods are static inner classes. A method local class can only be referenced inside the method it was declared in.
+
+In addition to the capabilities of their respective implementations, method local classes can also reference `final` local variables from their enclosing method's lexical context. Since Java 8, this access also extends to effectively final local variables. These variables, while not explicitly declared `final`, are set only once in the context of a method.
+
+Captured local variables are internally stored in method local classes as `final` fields named `val$`, and followed by the name of the variable. The actual values of the captured variables are injected into the local class via synthetically added constructor parameters. Synthetic parameters will be added before other defined constructor parameters.
+
+The following code snippet is an example of a method local class capturing a local variable:
+
+[source,java]
+----
+public class Outer {
+
+    public void printHello() {
+
+        String greeting = "Hello!";
+
+        class Greeter {
+            public void greet() {
+                System.out.println(greeting);
+            }
+        }
+
+        Greeter greeter = new Greeter();
+        greeter.greet(); // Prints "Hello!"
+    }
+}
+----
+
+The above code is compiled into the semantic equivalent of the following nested inner class combination.
+
+[source,java]
+.Semantic equivalent
+----
+public class Outer {
+
+    class Greeter {
+
+        final String val$greeting;
+
+        public Greeter(String $val1) {
+            this.val$greeting = $val1;
+        }
+
+        public void greet() {
+             System.out.println(this.val$greeting);
+        }
+    }
+
+    public void printHello() {
+        String greeting = "Hello!";
+        Greeter greeter = new Greeter(greeting);
+        greeter.greet(); // Prints "Hello!"
+    }
+}
+----
+
+NOTE: Parameters used to inject captured variables into method local classes are actually unnamed. The constructor parameter named `$val1` in the above code is only used for convenience.
+
+CAUTION: Defining fields in method local classes that start with the `val$` prefix should be avoided, because these names _may_ clash with compiler generated fields created to store the values of captured local variables. An example error message signaling such a problem would look something like the following: "Error while generating class Greeter (the symbol val$greeting conflicts with a compiler-synthesized symbol in Greeter)"
+
+== Anonymous inner classes
 
 TODO
