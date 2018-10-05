@@ -106,7 +106,7 @@ Outer$Inner inner = new Outer$Inner(outer);
 
 Before the introduction of the notion of nestmates in Java 11, nested inner classes had no special privileged access to the `private` members of their enclosing class. To allow nested inner classes access to these members, the Java compiler essentially had to break the encapsulation of the outer class by introducing static accessor and mutator methods for each private member. This can be demonstrated in the following example:
 
-[source]
+[source,java]
 ----
 public class Outer {
 
@@ -129,7 +129,7 @@ public class Outer {
 
 Examining the compiled equivalent of the `Outer` class, reveals a number of `static` helper methods, generated solely for providing the `Inner` class with access to various private class members.
 
-[source]
+[source,java]
 .Compiled equivalent of the Outer class
 ----
 public class Outer {
