@@ -1,4 +1,4 @@
 = Desugaring Java
 
-Desugaring Java is series of articles exploring the ever-fascinating internals of the Java language and it's libraries.
+Desugaring Java is series of articles exploring the ever-fascinating internals of the Java language and its libraries.
 Exploring some of the clever solutions, nasty hacks and compiler trickery that make up the language features programmers all use, but give little thought to.
