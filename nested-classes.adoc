@@ -37,7 +37,7 @@ As stated before, static inner classes are compiled into separate class files. I
 Outer$Inner inner = new Outer$Inner();
 ----
 
-CAUTION: While defining classes with names similar to `Outer$Inner`, while not explicitly prohibited, should be avoided as they _may_ clash with the compiler generated names of nested classes. This will cause the compiler to report an error similar to the following: "Error: duplicate class: Outer.Inner".
+CAUTION: Defining classes with names similar to `Outer$Inner`, while not prohibited, should be avoided, because these names _may_ clash with other compiler generated class names. An example error message signaling such a problem would look something like the following: "Error: duplicate class: Outer.Inner".
 
 == Nested inner classes
 
